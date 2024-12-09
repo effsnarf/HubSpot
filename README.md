@@ -1,24 +1,39 @@
-# API Sample Test
+# API Test
 
-## Getting Started
+## Task
 
-This project requires a newer version of Node. Don't forget to install the NPM packages afterwards.
+I made some improvements to the code and added a method to process meetings but there
+doesn't seem to be a `meetings` entity in the HubSpot CRM. I'm not sure if I'm doing
+something wrong, I tried adding `meeting` entries to Domain.js but it doesn't work,
+I tried connecting to the database with a MongoDB UI and I don't see any of the
+entities (`companies`, `contacts`) at all.
 
-You should change the name of the ```.env.example``` file to ```.env```.
+# Improvements
 
-Run ```node app.js``` to get things started. Hopefully the project should start without any errors.
+## (1) code quality and readability
 
-## Explanations
+A lot of the code repeats common tasks like error handling, common database actions, etc.
+It can be significantly compressed, made more readable, and less error-prone
+by grouping these into utility functions. I restructured some of the more obvious offenders
+(processEntities, tryOperation). Basically, there should be no code repetitions anywhere at all.
 
-The actual task will be explained separately.
+## (2) project architecture
 
-This is a very simple project that pulls data from HubSpot's CRM API. It pulls and processes company and contact data from HubSpot but does not insert it into the database.
+Putting all kinds of unrelated methods like `generateLastModifiedDateFilter`, `saveDomain`,
+`refreshAccessToken`, etc., in one large file may work for smaller tasks, but serious projects
+should be highly structured with general-purpose classes encapsulating individual responsibilities,
+such as an AccessToken class with token-related methods, and perhaps a Filter helper class
+for creating filters, and so on.
 
-In HubSpot, contacts can be part of companies. HubSpot calls this relationship an association. That is, a contact has an association with a company. We make a separate call when processing contacts to fetch this association data.
+As far as I can tell from worker.js, most of the work is simply data transformations.
+Once a developer is familiar enough with the more common operations, a domain-specific language
+or JSON format, or even some UI tool could be developed to define most of the
+data transformation operations.
 
-The Domain model is a record signifying a HockeyStack customer. You shouldn't worry about the actual implementation of it. The only important property is the ```hubspot```object in ```integrations```. This is how we know which HubSpot instance to connect to.
+## (3) code performance
 
-The implementation of the server and the ```server.js``` is not important for this project.
-
-Every data source in this project was created for test purposes. If any request takes more than 5 seconds to execute, there is something wrong with the implementation.
-
+It really depends on the performance bottlenecks. In case data transformations are too slow,
+the schema needs to be denormalized to gain performance in exchange for storage space.
+If the bottlenecks are at the network, some message queuing could be used. If the sheer amounts
+of data are the problem, some database replication can be set up, or making sure only
+the bare minimum of actual changes are sent across the network.
